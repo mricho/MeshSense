@@ -45,7 +45,7 @@ let traceRouteLog: Record<number, number> = {}
 
 let globalTracerouteRateLimitSec = 60
 
-if (tracerouteRateLimit.value < 15) tracerouteRateLimit.set(15)
+if (tracerouteRateLimit.value < 1) tracerouteRateLimit.set(1)
 
 export let deviceConfig: any = {}
 

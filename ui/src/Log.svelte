@@ -66,6 +66,19 @@
     return (packet.data?.variant?.value?.$typeName ?? packet.data?.$typeName)?.replace('meshtastic.', '')
   }
 
+  function formatRoute(path: number[], snrs: number[] | undefined) {
+    let parts: string[] = []
+    for (let i = 0; i < path.length; i++) {
+      parts.push(getNodeNameById(path[i]))
+      if (i < path.length - 1) {
+        let snr = snrs?.[i]
+        if (snr != null && snr > -512) parts.push(`-(${(snr / 4).toFixed(2)}dB)->`)
+        else parts.push('->')
+      }
+    }
+    return parts.join(' ')
+  }
+
   function showPin(packet: MeshPacket) {
     let node = getNodeById(packet.from)
     let description = getNodeName(node)
@@ -147,7 +160,11 @@
             </div>
           {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
             <div class="bg-purple-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
-              {[packet.to, ...packet?.data?.route, packet.from].map((id) => getNodeNameById(id)).join(' -> ')}
+              {formatRoute([packet.to, ...packet?.data?.route, packet.from], packet?.data?.snrTowards)}
+              {#if packet?.data?.routeBack}
+                <span class="opacity-60 mx-1">|</span>
+                back: {formatRoute([packet.from, ...packet?.data?.routeBack, packet.to], packet?.data?.snrBack)}
+              {/if}
             </div>
           {:else if packet.neighbors?.length}
             <div class="bg-fuchsia-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">

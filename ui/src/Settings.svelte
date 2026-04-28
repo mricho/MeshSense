@@ -107,9 +107,9 @@
       <input
         class="input w-28"
         type="number"
-        min={15}
+        min={1}
         on:change={(e) => {
-          let newValue = Math.max(Number(e.currentTarget.value), 15)
+          let newValue = Math.max(Number(e.currentTarget.value), 1)
           $tracerouteRateLimit = newValue
           e.currentTarget.value = String(newValue)
         }}
