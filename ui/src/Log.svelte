@@ -158,20 +158,21 @@
             <div class="bg-pink-800/40 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
               {packet?.data?.variant?.value}
             </div>
-          {:else if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
-            <div class="bg-purple-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
-              {formatRoute([packet.to, ...packet?.data?.route, packet.from], packet?.data?.snrTowards)}
-              {#if packet?.data?.routeBack}
-                <span class="opacity-60 mx-1">|</span>
-                back: {formatRoute([packet.from, ...packet?.data?.routeBack, packet.to], packet?.data?.snrBack)}
-              {/if}
-            </div>
           {:else if packet.neighbors?.length}
             <div class="bg-fuchsia-800/60 rounded px-1 my-0.5 text-xs ring-0 text-white/80 mx-2 w-fit">
               {packet.neighbors.map(({ nodeId }) => getNodeNameById(nodeId)).join(', ')}
             </div>
           {/if}
         </div>
+        {#if packet.data?.$typeName == 'meshtastic.RouteDiscovery'}
+          <div class="bg-purple-800/60 rounded px-1 mb-1 mx-2 text-xs ring-0 text-white/80 w-fit max-w-full break-words leading-5">
+            {formatRoute([packet.to, ...packet?.data?.route, packet.from], packet?.data?.snrTowards)}
+            {#if packet?.data?.routeBack}
+              <span class="opacity-60 mx-1">|</span>
+              back: {formatRoute([packet.from, ...packet?.data?.routeBack, packet.to], packet?.data?.snrBack)}
+            {/if}
+          </div>
+        {/if}
       {/if}
       {#if packet.message?.show}
         <div class="bg-blue-500/20 rounded px-1 ring-1 my-0.5 text-sm w-fit">
