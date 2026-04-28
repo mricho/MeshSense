@@ -516,31 +516,53 @@ export function traceRoute(destination: number) {
  *  Set `watchedNode` to a node num to start, or to `undefined` to stop.
  *  Only one node can be watched at a time. */
 let watchTimer: NodeJS.Timeout | undefined
-function scheduleWatch() {
-  clearTimeout(watchTimer)
-  let target = watchedNode.value
+let watchActiveTarget: number | undefined
+let watchGeneration = 0
+
+function scheduleWatchTick() {
+  let target = watchActiveTarget
   if (!target) return
+  let myGen = watchGeneration
   let delayMs = Math.max(1, tracerouteRateLimit.value) * 60000
   watchTimer = setTimeout(() => {
-    if (watchedNode.value !== target) return
-    if (connectionStatus.value !== 'connected') {
-      scheduleWatch()
+    if (myGen !== watchGeneration || watchActiveTarget !== target) {
+      console.log(`[meshtastic] Discarding stale watch tick for ${target} (current target ${watchActiveTarget}, gen ${myGen} vs ${watchGeneration})`)
       return
     }
-    console.log('[meshtastic] Watch tick — tracerouting', target)
+    if (connectionStatus.value !== 'connected') {
+      scheduleWatchTick()
+      return
+    }
+    console.log(`[meshtastic] Watch tick — tracerouting ${target}`)
     traceRoute(target)
-    scheduleWatch()
+    scheduleWatchTick()
   }, delayMs)
 }
+
 watchedNode.subscribe(() => {
+  let prev = watchActiveTarget
+  let next = typeof watchedNode.value === 'number' ? watchedNode.value : undefined
+  if (prev === next) return
+
+  // Bump generation FIRST so any in-flight tick callback bails out
+  watchGeneration++
   clearTimeout(watchTimer)
-  if (watchedNode.value) {
-    console.log('[meshtastic] Watch enabled for', watchedNode.value)
-    if (connectionStatus.value === 'connected') traceRoute(watchedNode.value)
-    scheduleWatch()
-  } else {
-    console.log('[meshtastic] Watch disabled')
+  watchTimer = undefined
+  watchActiveTarget = next
+
+  // Drop any queued traceroute for the previous target so it doesn't
+  // fire after the toggle. This is what guarantees "stop actually stops."
+  if (prev != null) {
+    pendingTraceroutes.delete(prev)
   }
+
+  if (!next) {
+    console.log(`[meshtastic] Watch disabled (was ${prev})`)
+    return
+  }
+  console.log(`[meshtastic] Watch enabled for ${next} (gen ${watchGeneration})`)
+  if (connectionStatus.value === 'connected') traceRoute(next)
+  scheduleWatchTick()
 })
 
 export function setWatchedNode(destination: number | undefined) {
