@@ -2,7 +2,7 @@ import 'dotenv/config'
 import './lib/persistence'
 import { app, createRoutes, finalize, server } from './lib/server'
 import './meshtastic'
-import { connect, disconnect, deleteNodes, requestPosition, send, traceRoute, setPosition, deviceConfig } from './meshtastic'
+import { connect, disconnect, deleteNodes, requestPosition, send, traceRoute, setPosition, deviceConfig, setWatchedNode } from './meshtastic'
 import { address, apiPort, currentTime, apiHostname, accessKey, autoConnectOnStartup, meshSenseNewsDate, allowRemoteMessaging } from './vars'
 import { hostname } from 'os'
 import intercept from 'intercept-stdout'
@@ -59,6 +59,12 @@ createRoutes((app) => {
   app.post('/traceRoute', async (req, res) => {
     let destination = req.body.destination
     await traceRoute(destination)
+    return res.sendStatus(200)
+  })
+
+  app.post('/watch', async (req, res) => {
+    let destination = req.body.destination
+    setWatchedNode(typeof destination === 'number' ? destination : undefined)
     return res.sendStatus(200)
   })
 

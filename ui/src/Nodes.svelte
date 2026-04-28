@@ -1,5 +1,5 @@
 <script context="module" lang="ts">
-  import { currentTime, myNodeMetadata, myNodeNum, nodeInactiveTimer, nodes, pendingTraceroutes, type NodeInfo } from 'api/src/vars'
+  import { currentTime, myNodeMetadata, myNodeNum, nodeInactiveTimer, nodes, pendingTraceroutes, tracerouteRateLimit, watchedNode, type NodeInfo } from 'api/src/vars'
   export let smallMode = writable(false)
   export let selectNodeFilterInput = writable(false)
   export let filteredNodes = writable<NodeInfo[]>([])
@@ -388,6 +388,11 @@
                     : ''}"
                   title="Traceroute {node.hopsAway == 0 ? 'Direct' : ''}{node?.trace ? [$myNodeNum, ...node?.trace?.route, node?.num].map((id) => getNodeNameById(id)).join(' -> ') : ''}"
                   on:click={() => axios.post('/traceRoute', { destination: node.num })}>↯</button
+                >
+                <button
+                  class="px-0.5 rounded-md border-purple-500/80 {$watchedNode === node.num ? 'border bg-purple-600/40 animate-pulse' : 'opacity-50 hover:opacity-100'}"
+                  title="{$watchedNode === node.num ? 'Watching — click to stop' : 'Watch (continuously traceroute every ' + $tracerouteRateLimit + ' min)'}"
+                  on:click={() => axios.post('/watch', { destination: $watchedNode === node.num ? null : node.num })}>👁</button
                 >
               {:else if $hasAccess}
                 <button title="Set Position" class="rounded-md fill-cyan-400/80 text-lg -mx-0.5" on:click={() => ($setPositionMode = true)}

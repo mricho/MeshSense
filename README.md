@@ -1,4 +1,49 @@
-# MeshSense
+# MeshSense (mricho fork)
+
+> **Heads up:** This is a personal fork of [Affirmatech/MeshSense](https://github.com/Affirmatech/MeshSense) with a few quality-of-life additions for antenna placement and link debugging. Everything in upstream MeshSense still works the same — this fork just adds extra capability on top. Upstream documentation and screenshots below remain accurate; only the items called out under **Fork-specific features** differ.
+
+For the official, supported version of MeshSense, see [Affirmatech/MeshSense](https://github.com/Affirmatech/MeshSense).
+
+---
+
+## Fork-specific features
+
+### 1. Lower minimum traceroute interval (1 min)
+
+Upstream's "Traceroute Rate Limit (Minutes per Node)" setting was floored at **15 minutes**. In this fork the floor is **1 minute**, matching the firmware's actual rate limit. Useful when you're actively debugging a link and don't want to wait a quarter hour between probes.
+
+Configurable in **Settings → Traceroute Rate Limit (Minutes per Node)**.
+
+### 2. Route-back + per-hop SNR in the log
+
+Meshtastic firmware has been reporting both directions of a traceroute (and per-hop SNR for each direction) for a while via `routeBack` / `snrTowards` / `snrBack`, but the upstream UI only renders the forward path. This fork shows the full info inline in the **Log** panel:
+
+```
+NBDY -(8.50dB)-> ?64ae0d19 -(5.25dB)-> !ac1cd197  |  back: !ac1cd197 -(6.00dB)-> ?64ae0d19 -(7.25dB)-> NBDY
+```
+
+SNR is shown in dB (firmware encodes it scaled ×4; the UI divides). Missing values are silently omitted. The 🔍 packet detail still has the full raw data if you want it.
+
+### 3. Watch mode (continuous traceroute)
+
+Next to the traceroute button (`↯`) on each node row there's a new **👁 button**. Toggling it on tells the API to traceroute that node continuously at the configured rate-limit interval (1 min if you've set the floor) until you turn it off.
+
+- **One node at a time.** Toggling Watch on for a different node implicitly turns it off for the previous one.
+- **Server-side timer.** Runs in the API process, so you can close the UI / put the laptop down and it keeps going. Stops on app exit (not persisted across restarts — by design, so a forgotten Watch doesn't keep hammering the network).
+- **Skips when disconnected.** If the device disconnects, ticks are skipped (not queued up) and resume on reconnect.
+- **Use case:** placing antennas. Mount it, walk to your radio, watch the dB values drift in real time as you adjust orientation.
+
+API endpoint:
+
+```
+POST /watch  { "destination": <nodeNum> | null }
+```
+
+Posting `null` (or omitting `destination`) clears Watch.
+
+---
+
+# MeshSense (upstream)
 
 **MeshSense** is a simple, [open-source](https://github.com/Affirmatech/MeshSense) application that monitors, maps and graphically displays all the vital stats of your area's Meshtastic network including connected nodes, signal reports, trace routes and more!
 
@@ -39,10 +84,10 @@ sudo apt install fonts-noto-color-emoji
 
 ## Development Setup
 
-To run MeshSense from the source code, first clone the MeshSense repo:
+To run MeshSense from the source code, first clone this fork:
 
 ```sh
-git clone --recurse-submodules https://github.com/Affirmatech/MeshSense.git
+git clone --recurse-submodules https://github.com/mricho/MeshSense.git
 cd MeshSense
 ```
 

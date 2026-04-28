@@ -26,7 +26,8 @@ import {
   packets,
   pendingTraceroutes,
   tracerouteRateLimit,
-  version
+  version,
+  watchedNode
 } from './vars'
 import { beginScanning, bluetoothDevices, stopScanning } from './lib/bluetooth'
 import exitHook from 'exit-hook'
@@ -509,6 +510,42 @@ export function traceRoute(destination: number) {
     pendingTraceroutes.push(destination)
     if (!queueProcessing) processTraceRoutes()
   }
+}
+
+/** Continuously traceroute a single node at the configured rate-limit interval.
+ *  Set `watchedNode` to a node num to start, or to `undefined` to stop.
+ *  Only one node can be watched at a time. */
+let watchTimer: NodeJS.Timeout | undefined
+function scheduleWatch() {
+  clearTimeout(watchTimer)
+  let target = watchedNode.value
+  if (!target) return
+  let delayMs = Math.max(1, tracerouteRateLimit.value) * 60000
+  watchTimer = setTimeout(() => {
+    if (watchedNode.value !== target) return
+    if (connectionStatus.value !== 'connected') {
+      scheduleWatch()
+      return
+    }
+    console.log('[meshtastic] Watch tick — tracerouting', target)
+    traceRoute(target)
+    scheduleWatch()
+  }, delayMs)
+}
+watchedNode.subscribe(() => {
+  clearTimeout(watchTimer)
+  if (watchedNode.value) {
+    console.log('[meshtastic] Watch enabled for', watchedNode.value)
+    if (connectionStatus.value === 'connected') traceRoute(watchedNode.value)
+    scheduleWatch()
+  } else {
+    console.log('[meshtastic] Watch disabled')
+  }
+})
+
+export function setWatchedNode(destination: number | undefined) {
+  if (destination === broadcastId) return
+  watchedNode.set(destination)
 }
 
 let queueProcessing = false
